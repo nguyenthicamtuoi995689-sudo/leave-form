@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đơn Xin Nghỉ Phép</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+  :root {
+    --ink:     #1a1a2e;
+    --ink-mid: #4a4a6a;
+    --ink-lt:  #9090b0;
+    --line:    #e4e4f0;
+    --bg:      #f7f7fb;
+    --white:   #ffffff;
+    --accent:  #4f46e5;
+    --accent-dk: #3730a3;
+    --accent-lt: #eef2ff;
+    --green:   #059669;
+    --green-lt:#d1fae5;
+    --red:     #dc2626;
+    --red-lt:  #fee2e2;
+    --yellow:  #d97706;
+    --yellow-lt:#fef3c7;
+    --r: 10px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    color: var(--ink);
+  }
+
+  /* ── HEADER ── */
+  .site-header {
+    background: var(--ink);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .site-logo {
+    display: flex; align-items: center; gap: 10px;
+    color: #fff; font-weight: 700; font-size: 15px; letter-spacing: -.01em;
+  }
+  .logo-dot {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .site-tag {
+    font-size: 12px; color: var(--ink-lt);
+    background: rgba(255,255,255,.08);
+    border-radius: 20px; padding: 3px 10px;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--ink);
+    padding: 32px 24px 40px;
+    text-align: center;
+    color: white;
+  }
+  .hero-title {
+    font-size: clamp(22px, 5vw, 32px);
+    font-weight: 800; letter-spacing: -.03em;
+    line-height: 1.2; margin-bottom: 8px;
+  }
+  .hero-title span { color: #a5b4fc; }
+  .hero-sub { font-size: 14px; color: #a0a0c0; }
+
+  /* ── FLOW BAR ── */
+  .flow-bar {
+    background: var(--white);
+    border-bottom: 1px solid var(--line);
+    padding: 16px 24px;
+    overflow-x: auto;
+  }
+  .flow-inner {
+    display: flex; align-items: center;
+    max-width: 700px; margin: 0 auto;
+    gap: 0;
+  }
+  .flow-node {
+    display: flex; flex-direction: column; align-items: center;
+    flex: 1; min-width: 72px;
+  }
+  .flow-circle {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--bg); border: 2px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--ink-lt); font-weight: 700;
+    position: relative; z-index: 1;
+  }
+  .flow-node.step-done .flow-circle  { background: var(--green-lt); border-color: var(--green); color: var(--green); }
+  .flow-node.step-now  .flow-circle  { background: var(--accent-lt); border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 4px rgba(79,70,229,.15); }
+  .flow-lbl { font-size: 10px; font-weight: 600; color: var(--ink-lt); margin-top: 5px; text-align: center; line-height: 1.3; }
+  .flow-node.step-done .flow-lbl { color: var(--green); }
+  .flow-node.step-now  .flow-lbl { color: var(--accent); }
+  .flow-line { flex: 1; height: 2px; background: var(--line); min-width: 12px; }
+  .flow-line.done { background: var(--green); }
+
+  /* ── MAIN ── */
+  .main {
+    max-width: 680px; margin: 0 auto;
+    padding: 28px 16px 60px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .card-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .card-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--accent-lt);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; flex-shrink: 0;
+  }
+  .card-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+  .card-sub   { font-size: 12px; color: var(--ink-lt); margin-top: 1px; }
+
+  /* ── FORM ── */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .full { grid-column: 1 / -1; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label {
+    font-size: 12px; font-weight: 700; color: var(--ink-mid);
+    letter-spacing: .02em; text-transform: uppercase;
+  }
+  .field label .req { color: var(--red); margin-left: 2px; }
+
+  .field input,
+  .field select,
+  .field textarea {
+    border: 1.5px solid var(--line);
+    border-radius: 7px;
+    padding: 9px 12px;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--bg);
+    font-family: inherit;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+    -webkit-appearance: none;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--white);
+    box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+  }
+  .field textarea { resize: vertical; min-height: 82px; }
+
+  /* dept highlight */
+  #f_dept option { font-weight: 500; }
+
+  /* routing preview */
+  .routing-preview {
+    display: none;
+    background: var(--accent-lt);
+    border: 1px solid #c7d2fe;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--accent-dk);
+    line-height: 1.7;
+  }
+  .routing-preview.show { display: block; }
+  .routing-preview strong { font-weight: 700; }
+
+  /* ── SUBMIT BTN ── */
+  .submit-wrap {
+    display: flex; justify-content: flex-end; gap: 10px;
+    margin-top: 20px;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 11px 22px; border-radius: 8px;
+    font-size: 14px; font-weight: 700;
+    border: none; cursor: pointer;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .btn-primary {
+    background: var(--accent); color: white;
+    box-shadow: 0 2px 8px rgba(79,70,229,.3);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--accent-dk);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79,70,229,.35);
+  }
+  .btn-ghost {
+    background: transparent; color: var(--ink-mid);
+    border: 1.5px solid var(--line);
+  }
+  .btn-ghost:hover { background: var(--bg); }
+  .btn:disabled { opacity: .55; cursor: not-allowed; transform: none !important; }
+
+  /* ── SPINNER ── */
+  .spin {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: rot .65s linear infinite;
+  }
+  @keyframes rot { to { transform: rotate(360deg); } }
+
+  /* ── ALERT ── */
+  .alert {
+    border-radius: 8px; padding: 12px 15px;
+    font-size: 13px; display: flex; gap: 10px;
+    align-items: flex-start; line-height: 1.55;
+    margin-bottom: 16px;
+  }
+  .alert-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .alert-warn { background: var(--yellow-lt); color: #92400e; border-left: 3px solid var(--yellow); }
+  .alert-info { background: var(--accent-lt); color: var(--accent-dk); border-left: 3px solid var(--accent); }
+
+  /* ── SUCCESS SCREEN ── */
+  #success-screen {
+    display: none;
+    text-align: center;
+    padding: 40px 24px;
+  }
+  .success-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: var(--green-lt);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; margin: 0 auto 20px;
+  }
+  .success-title { font-size: 22px; font-weight: 800; margin-bottom: 8px; color: var(--ink); }
+  .success-sub { font-size: 14px; color: var(--ink-mid); line-height: 1.6; margin-bottom: 24px; }
+  .success-flow {
+    background: var(--bg); border: 1px solid var(--line);
+    border-radius: var(--r); padding: 16px 20px;
+    font-size: 13px; color: var(--ink-mid);
+    text-align: left; line-height: 2;
+    max-width: 400px; margin: 0 auto 24px;
+  }
+  .success-flow .row { display: flex; align-items: center; gap: 8px; }
+  .success-flow .arrow { color: var(--ink-lt); font-size: 11px; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 20px; right: 20px; z-index: 999;
+    padding: 11px 16px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; color: white;
+    display: flex; align-items: center; gap: 8px;
+    transform: translateY(60px); opacity: 0;
+    transition: all .28s cubic-bezier(.34,1.56,.64,1);
+    max-width: 300px; pointer-events: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,.2);
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.ok  { background: var(--green); }
+  #toast.err { background: var(--red); }
+  #toast.warn{ background: var(--yellow); }
+
+  /* ── EMAILJS CONFIG MODAL ── */
+  #cfg-bar {
+    background: var(--yellow-lt);
+    border-bottom: 1px solid #fde68a;
+    padding: 10px 16px;
+    font-size: 13px; color: #92400e;
+    display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap;
+  }
+  #cfg-bar a {
+    color: var(--accent-dk); font-weight: 700; text-decoration: underline; cursor: pointer;
+  }
+
+  /* modal */
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    z-index: 500; display: flex; align-items: center; justify-content: center;
+    opacity: 0; visibility: hidden; transition: all .2s;
+  }
+  .modal-bg.open { opacity: 1; visibility: visible; }
+  .modal-box {
+    background: white; border-radius: 12px; padding: 28px;
+    max-width: 480px; width: 92%;
+    transform: translateY(16px); transition: transform .2s;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  }
+  .modal-bg.open .modal-box { transform: translateY(0); }
+  .modal-title { font-size: 17px; font-weight: 800; margin-bottom: 4px; }
+  .modal-desc  { font-size: 13px; color: var(--ink-mid); margin-bottom: 18px; line-height: 1.5; }
+  .modal-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+  .modal-field label { font-size: 12px; font-weight: 700; color: var(--ink-mid); text-transform: uppercase; }
+  .modal-field input { border: 1.5px solid var(--line); border-radius: 7px; padding: 8px 11px; font-size: 13px; font-family: inherit; }
+  .modal-field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+
+  /* ── MOBILE ── */
+  @media(max-width: 560px) {
+    .grid { grid-template-columns: 1fr; }
+    .full { grid-column: 1; }
+    .site-tag { display: none; }
+    .hero { padding: 24px 16px 32px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- CONFIG WARNING BAR -->
+<div id="cfg-bar" style="display:none">
+  ⚠️ EmailJS chưa được cấu hình — đơn sẽ lưu nhưng <strong>email chưa gửi được</strong>.
+  <a onclick="openCfg()">Cấu hình ngay →</a>
+</div>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="site-logo">
+    <div class="logo-dot">📋</div>
+    HR Leave System
+  </div>
+  <div class="site-tag">RI Events</div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-title">Đơn Xin <span>Nghỉ Phép</span></div>
+  <div class="hero-sub">Điền form bên dưới — email tự động gửi đến quản lý phòng ban để duyệt</div>
+</div>
+
+<!-- FLOW BAR -->
+<div class="flow-bar">
+  <div class="flow-inner">
+    <div class="flow-node step-now" id="fn1">
+      <div class="flow-circle">1</div>
+      <div class="flow-lbl">Điền đơn</div>
+    </div>
+    <div class="flow-line" id="fl1"></div>
+    <div class="flow-node" id="fn2">
+      <div class="flow-circle">2</div>
+      <div class="flow-lbl">Quản lý duyệt</div>
+    </div>
+    <div class="flow-line" id="fl2"></div>
+    <div class="flow-node" id="fn3">
+      <div class="flow-circle">3</div>
+      <div class="flow-lbl">CEO duyệt</div>
+    </div>
+    <div class="flow-line" id="fl3"></div>
+    <div class="flow-node" id="fn4">
+      <div class="flow-circle">✓</div>
+      <div class="flow-lbl">Thông báo kết quả</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- FORM SCREEN -->
+  <div id="form-screen">
+
+    <!-- Thông tin nhân viên -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-icon">👤</div>
+        <div>
+          <div class="card-title">Thông tin nhân viên</div>
+          <div class="card-sub">Vui lòng điền đầy đủ thông tin</div>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="field">
+          <label>Họ và tên <span class="req">*</span></label>
+          <input type="text" id="f_name" placeholder="Nguyễn Văn A" autocomplete="name">
+        </div>
+        <div class="field">
+          <label>Mã nhân viên <span class="req">*</span></label>
+          <input type="text" id="f_id" placeholder="NV001">
+        </div>
+        <div class="field full">
+          <label>Email nhân viên <span class="req">*</span></label>
+          <input type="email" id="f_email" placeholder="email@company.com" autocomplete="email">
+        </div>
+        <div class="field full">
+          <label>Phòng ban <span class="req">*</span></label>
+          <select id="f_dept" onchange="onDeptChange()">
+            <option value="">-- Chọn phòng ban --</option>
+            <option value="design">Design</option>
+            <option value="operations">Operations</option>
+            <option value="account">Account</option>
+            <option value="hr">HR</option>
+            <option value="business_support">Business Support</option>
+          </select>
+          <!-- Routing preview -->
+          <div class="routing-preview" id="routing-preview"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Thông tin nghỉ phép -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-icon">📅</div>
+        <div>
+          <div class="card-title">Thông tin nghỉ phép</div>
+          <div class="card-sub">Điền thời gian và lý do xin nghỉ</div>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="field full">
+          <label>Loại nghỉ phép <span class="req">*</span></label>
+          <select id="f_type">
+            <option value="">-- Chọn loại nghỉ --</option>
+            <option>Nghỉ phép năm</option>
+            <option>Nghỉ ốm / Bệnh</option>
+            <option>Nghỉ thai sản</option>
+            <option>Nghỉ việc riêng</option>
+            <option>Nghỉ không lương</option>
+            <option>Nghỉ bù</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Ngày bắt đầu <span class="req">*</span></label>
+          <input type="date" id="f_from">
+        </div>
+        <div class="field">
+          <label>Ngày kết thúc <span class="req">*</span></label>
+          <input type="date" id="f_to">
+        </div>
+        <div class="field full">
+          <label>Số ngày nghỉ <span class="req">*</span></label>
+          <select id="f_duration">
+            <option value="">-- Chọn --</option>
+            <option>0.5 ngày (buổi sáng)</option>
+            <option>0.5 ngày (buổi chiều)</option>
+            <option>1 ngày</option>
+            <option>2 ngày</option>
+            <option>3 ngày</option>
+            <option>4 ngày</option>
+            <option>5 ngày</option>
+            <option>Nhiều hơn 5 ngày (ghi rõ trong lý do)</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label>Lý do xin nghỉ <span class="req">*</span></label>
+          <textarea id="f_reason" placeholder="Nêu rõ lý do xin nghỉ phép..."></textarea>
+        </div>
+        <div class="field">
+          <label>Người bàn giao</label>
+          <input type="text" id="f_handover" placeholder="Tên đồng nghiệp tiếp nhận">
+        </div>
+        <div class="field">
+          <label>Số điện thoại liên hệ</label>
+          <input type="tel" id="f_phone" placeholder="0901 234 567">
+        </div>
+      </div>
+
+      <div class="submit-wrap">
+        <button class="btn btn-ghost" onclick="resetForm()">Nhập lại</button>
+        <button class="btn btn-primary" id="submit-btn" onclick="submitForm()">
+          Gửi đơn xin nghỉ →
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /form-screen -->
+
+  <!-- SUCCESS SCREEN -->
+  <div id="success-screen">
+    <div class="card" style="text-align:center;padding:40px 24px;">
+      <div class="success-icon">✅</div>
+      <div class="success-title">Đơn đã được gửi!</div>
+      <div class="success-sub" id="success-msg"></div>
+      <div class="success-flow" id="success-flow"></div>
+      <button class="btn btn-ghost" onclick="newForm()" style="margin:0 auto;">
+        + Tạo đơn mới
+      </button>
+    </div>
+  </div>
+
+</main>
+
+<!-- CONFIG MODAL -->
+<div class="modal-bg" id="cfg-modal">
+  <div class="modal-box">
+    <div class="modal-title">⚙️ Cấu hình EmailJS</div>
+    <div class="modal-desc">
+      Đăng ký miễn phí tại <strong>emailjs.com</strong> → lấy Service ID, Template ID, Public Key rồi điền vào đây.
+    </div>
+    <div class="modal-field">
+      <label>Service ID</label>
+      <input type="text" id="cfg_svc" placeholder="service_xxxxxxx">
+    </div>
+    <div class="modal-field">
+      <label>Template ID</label>
+      <input type="text" id="cfg_tpl" placeholder="template_xxxxxxx">
+    </div>
+    <div class="modal-field">
+      <label>Public Key</label>
+      <input type="text" id="cfg_key" placeholder="xxxxxxxxxxxxxxx">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeCfg()">Đóng</button>
+      <button class="btn btn-primary" onclick="saveCfg()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+// ROUTING TABLE
+// ─────────────────────────────────────────────
+const DEPT_CONFIG = {
+  design: {
+    label: 'Design',
+    manager_email: 'hrfreelance663@gmail.com',
+    manager_name:  'Quản lý Design',
+    ceo_email:     'tuointc@rievents.vn',
+    ceo_name:      'CEO (Operations & Design)',
+  },
+  operations: {
+    label: 'Operations',
+    manager_email: 'tuointc@rievents.vn',
+    manager_name:  'Quản lý Operations',
+    ceo_email:     'tuointc@rievents.vn',
+    ceo_name:      'CEO (Operations & Design)',
+  },
+  account: {
+    label: 'Account',
+    manager_email: 'nguyenthicamtuoi5659@gmail.com',
+    manager_name:  'Quản lý Account',
+    ceo_email:     'tuyendungagencyting@gmail.com',
+    ceo_name:      'CEO (BS & Account)',
+  },
+  hr: {
+    label: 'HR',
+    manager_email: 'hrfreelance663@gmail.com',
+    manager_name:  'Quản lý HR',
+    ceo_email:     'tuointc@rievents.vn',
+    ceo_name:      'CEO (Operations & Design)',
+  },
+  business_support: {
+    label: 'Business Support',
+    manager_email: 'nguyenthicamtuoi995689@gmail.com',
+    manager_name:  'Quản lý Business Support',
+    ceo_email:     'tuyendungagencyting@gmail.com',
+    ceo_name:      'CEO (BS & Account)',
+  },
+};
+
+const HR_EMAIL = 'hrfreelance663@gmail.com';
+
+// ─────────────────────────────────────────────
+// CONFIG (EmailJS)
+// ─────────────────────────────────────────────
+let CFG = JSON.parse(localStorage.getItem('ej_cfg') || '{}');
+
+function loadCfg() {
+  if (CFG.svc) document.getElementById('cfg_svc').value = CFG.svc;
+  if (CFG.tpl) document.getElementById('cfg_tpl').value = CFG.tpl;
+  if (CFG.key) document.getElementById('cfg_key').value = CFG.key;
+  document.getElementById('cfg-bar').style.display =
+    (CFG.svc && CFG.tpl && CFG.key) ? 'none' : 'flex';
+}
+function saveCfg() {
+  CFG = {
+    svc: document.getElementById('cfg_svc').value.trim(),
+    tpl: document.getElementById('cfg_tpl').value.trim(),
+    key: document.getElementById('cfg_key').value.trim(),
+  };
+  localStorage.setItem('ej_cfg', JSON.stringify(CFG));
+  document.getElementById('cfg-bar').style.display =
+    (CFG.svc && CFG.tpl && CFG.key) ? 'none' : 'flex';
+  closeCfg();
+  toast('✅ Đã lưu cấu hình EmailJS!', 'ok');
+}
+function openCfg() { document.getElementById('cfg-modal').classList.add('open'); }
+function closeCfg() { document.getElementById('cfg-modal').classList.remove('open'); }
+
+// ─────────────────────────────────────────────
+// DEPT CHANGE → show routing preview
+// ─────────────────────────────────────────────
+function onDeptChange() {
+  const val = document.getElementById('f_dept').value;
+  const preview = document.getElementById('routing-preview');
+  if (!val) { preview.classList.remove('show'); return; }
+  const d = DEPT_CONFIG[val];
+  preview.innerHTML = `
+    <strong>📧 Email sẽ được gửi theo thứ tự:</strong><br>
+    1️⃣ <strong>${d.manager_name}</strong> (${d.manager_email}) — duyệt bước 1<br>
+    2️⃣ <strong>${d.ceo_name}</strong> (${d.ceo_email}) — duyệt cuối<br>
+    3️⃣ <strong>HR</strong> (${HR_EMAIL}) — tổng hợp công<br>
+    4️⃣ <strong>Nhân viên</strong> — nhận kết quả
+  `;
+  preview.classList.add('show');
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+(function init() {
+  loadCfg();
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('f_from').min = today;
+  document.getElementById('f_to').min   = today;
+  document.getElementById('f_from').addEventListener('change', function() {
+    document.getElementById('f_to').min = this.value;
+  });
+})();
+
+// ─────────────────────────────────────────────
+// SUBMIT
+// ─────────────────────────────────────────────
+async function submitForm() {
+  // 1. collect
+  const v = {
+    name:     document.getElementById('f_name').value.trim(),
+    emp_id:   document.getElementById('f_id').value.trim(),
+    email:    document.getElementById('f_email').value.trim(),
+    dept_key: document.getElementById('f_dept').value,
+    type:     document.getElementById('f_type').value,
+    from:     document.getElementById('f_from').value,
+    to:       document.getElementById('f_to').value,
+    duration: document.getElementById('f_duration').value,
+    reason:   document.getElementById('f_reason').value.trim(),
+    handover: document.getElementById('f_handover').value.trim() || 'Không có',
+    phone:    document.getElementById('f_phone').value.trim()    || 'Không cung cấp',
+  };
+
+  // 2. validate
+  const req = ['name','emp_id','email','dept_key','type','from','to','duration','reason'];
+  for (const k of req) {
+    if (!v[k]) { toast('⚠️ Vui lòng điền đầy đủ các trường bắt buộc!', 'warn'); return; }
+  }
+  if (!v.email.includes('@')) { toast('⚠️ Email không hợp lệ!', 'warn'); return; }
+  if (v.from > v.to)          { toast('⚠️ Ngày kết thúc phải sau ngày bắt đầu!', 'warn'); return; }
+
+  const dept = DEPT_CONFIG[v.dept_key];
+
+  // 3. UI loading
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spin"></div> Đang gửi...';
+
+  // 4. send emails
+  let sent = false;
+  if (CFG.svc && CFG.tpl && CFG.key) {
+    try {
+      emailjs.init(CFG.key);
+
+      const base = {
+        employee_name: v.name,
+        employee_id:   v.emp_id,
+        employee_email:v.email,
+        department:    dept.label,
+        leave_type:    v.type,
+        from_date:     fmtDate(v.from),
+        to_date:       fmtDate(v.to),
+        duration:      v.duration,
+        reason:        v.reason,
+        handover:      v.handover,
+        phone:         v.phone,
+        submitted_at:  new Date().toLocaleString('vi-VN'),
+      };
+
+      // Collect unique recipients (manager, ceo may overlap for operations)
+      const recipients = [];
+
+      // Manager (step 1)
+      recipients.push({
+        to_email: dept.manager_email,
+        to_name:  dept.manager_name,
+        role_note: `Bạn là người duyệt BƯỚC 1 cho đơn này.\nSau khi duyệt, đơn sẽ chuyển tiếp đến ${dept.ceo_name} để phê duyệt cuối.`,
+      });
+
+      // CEO (step 2) — skip if same as manager
+      if (dept.ceo_email !== dept.manager_email) {
+        recipients.push({
+          to_email: dept.ceo_email,
+          to_name:  dept.ceo_name,
+          role_note: `Bạn là người phê duyệt CUỐI cho đơn này (sau khi Quản lý đã duyệt bước 1).`,
+        });
+      }
+
+      // HR — skip if same as manager
+      if (HR_EMAIL !== dept.manager_email) {
+        recipients.push({
+          to_email: HR_EMAIL,
+          to_name:  'HR',
+          role_note: 'Đây là bản sao gửi HR để tổng hợp chấm công.',
+        });
+      }
+
+      // Employee confirmation
+      recipients.push({
+        to_email: v.email,
+        to_name:  v.name,
+        role_note: `Đây là xác nhận đơn xin nghỉ phép của bạn đã được gửi đi.\nĐơn đang chờ ${dept.manager_name} duyệt bước 1.`,
+      });
+
+      for (const r of recipients) {
+        await emailjs.send(CFG.svc, CFG.tpl, { ...base, ...r });
+      }
+
+      sent = true;
+    } catch(e) {
+      console.error('EmailJS error:', e);
+    }
+  }
+
+  // 5. show success
+  btn.disabled = false;
+  btn.innerHTML = 'Gửi đơn xin nghỉ →';
+  showSuccess(v, dept, sent);
+}
+
+// ─────────────────────────────────────────────
+// SUCCESS SCREEN
+// ─────────────────────────────────────────────
+function showSuccess(v, dept, sent) {
+  // animate flow bar
+  ['fn1','fl1','fn2','fl2','fn3','fl3','fn4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (id.startsWith('fn')) { el.className = 'flow-node step-done'; }
+    else                     { el.className = 'flow-line done'; }
+  });
+
+  document.getElementById('success-msg').innerHTML = sent
+    ? `Email đã được gửi tự động đến <strong>${dept.manager_name}</strong>, <strong>HR</strong> và hộp thư của bạn (<strong>${v.email}</strong>).`
+    : `Đơn đã được ghi nhận. (Email chưa gửi — cần cấu hình EmailJS)`;
+
+  const sameManagerCeo = dept.manager_email === dept.ceo_email;
+  document.getElementById('success-flow').innerHTML = `
+    <div class="row">✅ Nhân viên gửi đơn</div>
+    <div class="row arrow">↓</div>
+    <div class="row">📧 ${dept.manager_name} duyệt bước 1</div>
+    <div class="row arrow">↓</div>
+    ${sameManagerCeo ? '' : `<div class="row">👑 ${dept.ceo_name} phê duyệt cuối</div><div class="row arrow">↓</div>`}
+    <div class="row">📩 Kết quả gửi về email nhân viên + HR</div>
+  `;
+
+  document.getElementById('form-screen').style.display = 'none';
+  document.getElementById('success-screen').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function newForm() {
+  resetForm();
+  document.getElementById('form-screen').style.display = 'block';
+  document.getElementById('success-screen').style.display = 'none';
+  // reset flow bar
+  document.getElementById('fn1').className = 'flow-node step-now';
+  ['fn2','fn3','fn4'].forEach(id => { document.getElementById(id).className = 'flow-node'; });
+  ['fl1','fl2','fl3'].forEach(id => { document.getElementById(id).className = 'flow-line'; });
+}
+
+// ─────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────
+function resetForm() {
+  ['f_name','f_id','f_email','f_dept','f_type','f_from','f_to','f_duration','f_reason','f_handover','f_phone']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.getElementById('routing-preview').classList.remove('show');
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  const [y,m,dd] = d.split('-');
+  return `${dd}/${m}/${y}`;
+}
+
+let _toTimer;
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + (type || '');
+  clearTimeout(_toTimer);
+  _toTimer = setTimeout(() => { el.className = ''; }, 3200);
+}
+</script>
+</body>
+</html>
