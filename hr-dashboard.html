@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Dashboard – Nghỉ Phép</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --ink:#1a1a2e; --ink-mid:#4a4a6a; --ink-lt:#9090b0;
+  --line:#e4e4f0; --bg:#f7f7fb; --white:#fff;
+  --accent:#4f46e5; --accent-dk:#3730a3; --accent-lt:#eef2ff;
+  --green:#059669; --green-lt:#d1fae5;
+  --red:#dc2626; --red-lt:#fee2e2;
+  --yellow:#d97706; --yellow-lt:#fef3c7;
+  --r:10px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height:100vh;color:var(--ink)}
+
+.site-header{background:var(--ink);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between}
+.site-logo{display:flex;align-items:center;gap:10px;color:#fff;font-weight:700;font-size:15px}
+.logo-dot{width:28px;height:28px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px}
+.header-actions{display:flex;gap:8px;align-items:center}
+
+.main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat{background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:16px;border-left:4px solid var(--line)}
+.stat.blue{border-left-color:var(--accent)}
+.stat.green{border-left-color:var(--green)}
+.stat.yellow{border-left-color:var(--yellow)}
+.stat.red{border-left-color:var(--red)}
+.stat-num{font-size:28px;font-weight:800;line-height:1}
+.stat-lbl{font-size:12px;color:var(--ink-lt);margin-top:4px;font-weight:500}
+
+/* card */
+.card{background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:16px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.card-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+
+/* filters */
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.filters select,.filters input{border:1.5px solid var(--line);border-radius:7px;padding:7px 10px;font-size:13px;color:var(--ink);background:var(--bg);font-family:inherit}
+.filters select:focus,.filters input:focus{outline:none;border-color:var(--accent)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:all .15s;font-family:inherit}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-dk)}
+.btn-success{background:var(--green);color:#fff}
+.btn-success:hover{background:#047857}
+.btn-ghost{background:transparent;color:var(--ink-mid);border:1.5px solid var(--line)}
+.btn-ghost:hover{background:var(--bg)}
+.btn-sm{padding:6px 12px;font-size:12px}
+
+/* table */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--bg);padding:9px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--ink-lt);text-transform:uppercase;letter-spacing:.04em;border-bottom:1.5px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--bg);vertical-align:middle}
+tr:hover td{background:#fafafa}
+tr:last-child td{border-bottom:none}
+
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700}
+.badge-wait{background:var(--yellow-lt);color:var(--yellow)}
+.badge-ok{background:var(--green-lt);color:var(--green)}
+.badge-no{background:var(--red-lt);color:var(--red)}
+.bdot{width:5px;height:5px;border-radius:50%;background:currentColor}
+
+/* setup modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:all .2s}
+.modal-bg.open{opacity:1;visibility:visible}
+.modal-box{background:#fff;border-radius:12px;padding:26px;max-width:500px;width:92%;transform:translateY(14px);transition:transform .2s;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.modal-bg.open .modal-box{transform:translateY(0)}
+.m-title{font-size:16px;font-weight:800;margin-bottom:4px}
+.m-desc{font-size:13px;color:var(--ink-mid);margin-bottom:16px;line-height:1.5}
+.m-field{display:flex;flex-direction:column;gap:4px;margin-bottom:11px}
+.m-field label{font-size:11px;font-weight:700;color:var(--ink-mid);text-transform:uppercase}
+.m-field input{border:1.5px solid var(--line);border-radius:7px;padding:8px 11px;font-size:13px;font-family:inherit}
+.m-field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.m-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+
+.empty{text-align:center;padding:40px 20px;color:var(--ink-lt);font-size:14px}
+.empty-icon{font-size:36px;margin-bottom:10px}
+
+#toast{position:fixed;bottom:18px;right:18px;z-index:999;padding:10px 15px;border-radius:8px;font-size:13px;font-weight:600;color:#fff;display:flex;align-items:center;gap:7px;transform:translateY(60px);opacity:0;transition:all .28s cubic-bezier(.34,1.56,.64,1);max-width:290px;pointer-events:none;box-shadow:0 4px 18px rgba(0,0,0,.18)}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.ok{background:var(--green)}
+#toast.err{background:var(--red)}
+#toast.warn{background:var(--yellow)}
+
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:rot .65s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:400;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-size:14px;color:var(--ink-mid)}
+.loading-overlay.hide{display:none}
+.big-spin{width:36px;height:36px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:rot .8s linear infinite}
+
+@media(max-width:640px){
+  .stats{grid-template-columns:1fr 1fr}
+  .filters{flex-direction:column;align-items:stretch}
+}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+  <div class="big-spin"></div>
+  <div>Đang tải dữ liệu...</div>
+</div>
+
+<header class="site-header">
+  <div class="site-logo">
+    <div class="logo-dot">👔</div>
+    HR Dashboard
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-ghost btn-sm" onclick="openSetup()">⚙️ Cài đặt</button>
+    <button class="btn btn-ghost btn-sm" onclick="loadData()">🔄 Làm mới</button>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat blue"><div class="stat-num" id="st-total">—</div><div class="stat-lbl">Tổng đơn</div></div>
+    <div class="stat yellow"><div class="stat-num" id="st-wait">—</div><div class="stat-lbl">Chờ duyệt</div></div>
+    <div class="stat green"><div class="stat-num" id="st-ok">—</div><div class="stat-lbl">Đã duyệt</div></div>
+    <div class="stat red"><div class="stat-num" id="st-no">—</div><div class="stat-lbl">Từ chối</div></div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">📋 Danh Sách Đơn Nghỉ Phép</div>
+      <div class="filters">
+        <select id="fil-dept" onchange="render()">
+          <option value="">Tất cả phòng ban</option>
+          <option>Design</option>
+          <option>Operations</option>
+          <option>Account</option>
+          <option>HR</option>
+          <option>Business Support</option>
+        </select>
+        <select id="fil-status" onchange="render()">
+          <option value="">Tất cả trạng thái</option>
+          <option>Chờ duyệt</option>
+          <option>Đã duyệt</option>
+          <option>Từ chối</option>
+        </select>
+        <input type="month" id="fil-month" onchange="render()" title="Lọc theo tháng">
+        <button class="btn btn-success" onclick="exportExcel()">📊 Xuất Excel</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nhân viên</th>
+            <th>Phòng ban</th>
+            <th>Loại nghỉ</th>
+            <th>Từ ngày</th>
+            <th>Đến ngày</th>
+            <th>Số ngày</th>
+            <th>Trạng thái</th>
+            <th>Thời gian gửi</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- SETUP MODAL -->
+<div class="modal-bg" id="setup-modal">
+  <div class="modal-box">
+    <div class="m-title">⚙️ Cài đặt HR Dashboard</div>
+    <div class="m-desc">Nhập URL của Google Apps Script để kết nối với Google Sheets.</div>
+    <div class="m-field">
+      <label>Google Apps Script URL <span style="color:var(--red)">*</span></label>
+      <input type="url" id="hr_gas" placeholder="https://script.google.com/macros/s/...">
+    </div>
+    <div style="font-size:12px;color:var(--ink-lt);margin-top:-6px;margin-bottom:12px;line-height:1.6">
+      💡 URL này giống URL bạn đã nhập trong form nhân viên.<br>
+      Cả 2 file dùng chung 1 Apps Script URL.
+    </div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeSetup()">Đóng</button>
+      <button class="btn btn-primary" onclick="saveSetup()">💾 Lưu & Tải dữ liệu</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let allRows = [];
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxUbxS232vVvN7jGYqXdH7A8N2EAegu0dInFGDfID-b0AWWHN4oDIrpRv4ey1NcKynG/exec';
+
+function openSetup(){
+  if(GAS_URL) document.getElementById('hr_gas').value = GAS_URL;
+  document.getElementById('setup-modal').classList.add('open');
+}
+function closeSetup(){ document.getElementById('setup-modal').classList.remove('open'); }
+function saveSetup(){
+
+  localStorage.setItem('hr_gas_url', GAS_URL);
+  closeSetup();
+  loadData();
+}
+
+async function loadData() {
+  if (!GAS_URL) { openSetup(); document.getElementById('loading').classList.add('hide'); return; }
+  document.getElementById('loading').classList.remove('hide');
+  try {
+    const res  = await fetch(GAS_URL);
+    const json = await res.json();
+    if (json.success) {
+      allRows = json.rows || [];
+      render();
+      updateStats();
+      toast('✅ Đã tải ' + allRows.length + ' đơn', 'ok');
+    } else {
+      toast('❌ Lỗi: ' + (json.error || 'Không rõ'), 'err');
+    }
+  } catch(e) {
+    toast('❌ Không kết nối được Apps Script. Kiểm tra URL và quyền truy cập.', 'err');
+  }
+  document.getElementById('loading').classList.add('hide');
+}
+
+function updateStats() {
+  document.getElementById('st-total').textContent = allRows.length;
+  document.getElementById('st-wait').textContent  = allRows.filter(r => r['Trạng thái'] === 'Chờ duyệt').length;
+  document.getElementById('st-ok').textContent    = allRows.filter(r => r['Trạng thái'] === 'Đã duyệt').length;
+  document.getElementById('st-no').textContent    = allRows.filter(r => r['Trạng thái'] === 'Từ chối').length;
+}
+
+function getFiltered() {
+  const dept   = document.getElementById('fil-dept').value;
+  const status = document.getElementById('fil-status').value;
+  const month  = document.getElementById('fil-month').value; // "YYYY-MM"
+  return allRows.filter(r => {
+    if (dept   && r['Phòng ban'] !== dept)         return false;
+    if (status && r['Trạng thái'] !== status)       return false;
+    if (month) {
+      // from_date stored as dd/MM/yyyy
+      const fd = r['Từ ngày'];
+      if (fd) {
+        const parts = fd.split('/');
+        if (parts.length === 3) {
+          const rowMonth = parts[2] + '-' + parts[1].padStart(2,'0');
+          if (rowMonth !== month) return false;
+        }
+      }
+    }
+    return true;
+  });
+}
+
+function render() {
+  const rows = getFiltered();
+  const tbody = document.getElementById('tbody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">📭</div>Không có đơn nào</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.slice().reverse().map(r => `
+    <tr>
+      <td><strong>${r['Họ tên']||''}</strong><br><span style="font-size:11px;color:var(--ink-lt)">${r['Mã NV']||''} · ${r['Email NV']||''}</span></td>
+      <td>${r['Phòng ban']||''}</td>
+      <td>${r['Loại nghỉ']||''}</td>
+      <td>${r['Từ ngày']||''}</td>
+      <td>${r['Đến ngày']||''}</td>
+      <td><strong>${r['Số ngày']||''}</strong></td>
+      <td>${statusBadge(r['Trạng thái'])}</td>
+      <td style="font-size:12px;color:var(--ink-lt)">${r['Thời gian gửi']||''}</td>
+    </tr>
+  `).join('');
+}
+
+function statusBadge(s) {
+  if (s === 'Đã duyệt') return `<span class="badge badge-ok"><span class="bdot"></span>Đã duyệt</span>`;
+  if (s === 'Từ chối')  return `<span class="badge badge-no"><span class="bdot"></span>Từ chối</span>`;
+  return `<span class="badge badge-wait"><span class="bdot"></span>Chờ duyệt</span>`;
+}
+
+function exportExcel() {
+  const rows = getFiltered();
+  if (!rows.length) { toast('⚠️ Không có dữ liệu để xuất!','warn'); return; }
+
+  const month = document.getElementById('fil-month').value;
+  const dept  = document.getElementById('fil-dept').value;
+
+  const data = rows.map(r => ({
+    'Mã đơn':         r['Mã đơn']||'',
+    'Thời gian gửi':  r['Thời gian gửi']||'',
+    'Họ tên':         r['Họ tên']||'',
+    'Mã NV':          r['Mã NV']||'',
+    'Email NV':       r['Email NV']||'',
+    'Phòng ban':      r['Phòng ban']||'',
+    'Loại nghỉ':      r['Loại nghỉ']||'',
+    'Từ ngày':        r['Từ ngày']||'',
+    'Đến ngày':       r['Đến ngày']||'',
+    'Số ngày':        r['Số ngày']||'',
+    'Lý do':          r['Lý do']||'',
+    'Người bàn giao': r['Người bàn giao']||'',
+    'SĐT liên hệ':    r['SĐT liên hệ']||'',
+    'Email Quản lý':  r['Email Quản lý']||'',
+    'Email CEO':      r['Email CEO']||'',
+    'Trạng thái':     r['Trạng thái']||'',
+    'Ghi chú chấm công': '',
+  }));
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = Object.keys(data[0]).map(() => ({ wch: 20 }));
+  XLSX.utils.book_append_sheet(wb, ws, 'Nghỉ Phép');
+
+  const label = [dept||'TatCa', month||new Date().toISOString().slice(0,7)].join('_');
+  XLSX.writeFile(wb, `ChamCong_NghiPhep_${label}.xlsx`);
+  toast('📊 Xuất Excel thành công!', 'ok');
+}
+
+let _tt;
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'show '+(type||'');
+  clearTimeout(_tt); _tt = setTimeout(()=>{ el.className=''; }, 3200);
+}
+
+// init
+window.addEventListener('DOMContentLoaded', () => {
+
+  loadData();
+  const today = new Date();
+  document.getElementById('fil-month').value = today.toISOString().slice(0,7);
+});
+</script>
+</body>
+</html>
